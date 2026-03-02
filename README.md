@@ -12,6 +12,7 @@ Application mobile-first de co-voiturage pour **Lomé Business School (LBS)**.
 ## Fonctionnalités implémentées
 
 - Authentification Supabase (inscription/connexion)
+- Réinitialisation et mise à jour du mot de passe via Supabase Auth
 - Restriction email LBS (`@lomebs.com`)
 - Profil utilisateur avec `role` (`student`/`driver`) et `token_balance`
 - Dashboard avec affichage du solde
@@ -73,6 +74,8 @@ npm run dev
 - `npm run preview` : preview du build
 
 ## Schéma DB (résumé)
+
+Note sécurité: le mot de passe n'est pas stocké dans `profiles`. Il est géré et hashé par Supabase dans `auth.users`.
 
 - `profiles(id, email, full_name, role, token_balance)`
 - `trips(id, driver_id, zone, price, seats, status, departure_city, destination, departure_time)`

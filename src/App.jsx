@@ -5,6 +5,7 @@ import TripListing from './components/TripListing'
 import QRCodeValidator from './components/QRCodeValidator'
 import AuthPage from './components/AuthPage'
 import AdminPage from './components/AdminPage'
+import UpdatePasswordPage from './components/UpdatePasswordPage'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -95,6 +96,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route
         path="*"
         element={

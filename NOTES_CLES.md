@@ -5,8 +5,10 @@
 - Seuls les emails LBS sont autorisés.
 - À la création de compte, un trigger SQL crée automatiquement la ligne `profiles`.
 - Le profil stocke:
-  - `role`: `student` ou `driver`
+  - `role`: `student`, `driver` ou `admin`
   - `token_balance`: solde des tokens
+- Le mot de passe n'est pas dans `profiles`: il est géré par Supabase Auth (`auth.users`, hashé).
+- Flux UX ajouté: "Mot de passe oublié" + page de mise à jour du mot de passe.
 
 ## 2) Réservation
 

@@ -7,14 +7,16 @@ const initialForm = {
   fullName: '',
   email: '',
   password: '',
+  confirmPassword: '',
   role: 'student',
 }
 
 export default function AuthPage() {
-  const { user, loading, signIn, signUp } = useAuth()
+  const { user, loading, signIn, signUp, requestPasswordReset } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -35,6 +37,9 @@ export default function AuthPage() {
 
     try {
       if (isSignUp) {
+        if (form.password !== form.confirmPassword) {
+          throw new Error('La confirmation du mot de passe ne correspond pas.')
+        }
         await signUp({
           email: form.email,
           password: form.password,
@@ -49,6 +54,20 @@ export default function AuthPage() {
       setError(err.message || 'Erreur authentification.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    setError('')
+    setMessage('')
+    setResetting(true)
+    try {
+      await requestPasswordReset(form.email)
+      setMessage('Un lien de réinitialisation a été envoyé par email.')
+    } catch (err) {
+      setError(err.message || 'Impossible d’envoyer le lien de réinitialisation.')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -98,6 +117,19 @@ export default function AuthPage() {
           />
 
           {isSignUp && (
+            <input
+              type="password"
+              name="confirmPassword"
+              required
+              minLength={6}
+              value={form.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirmer le mot de passe"
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          )}
+
+          {isSignUp && (
             <select
               name="role"
               value={form.role}
@@ -121,6 +153,16 @@ export default function AuthPage() {
             {isSignUp ? 'Créer un compte' : 'Se connecter'}
           </button>
         </form>
+
+        {!isSignUp && (
+          <button
+            onClick={handleForgotPassword}
+            disabled={resetting || !form.email}
+            className="w-full text-sm text-slate-600 hover:text-brand-700 disabled:opacity-60"
+          >
+            {resetting ? 'Envoi du lien...' : 'Mot de passe oublié ?'}
+          </button>
+        )}
 
         <button
           onClick={() => setIsSignUp((v) => !v)}

@@ -121,6 +121,25 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
+  const requestPasswordReset = async (email) => {
+    if (!isLbsEmail(email)) {
+      throw new Error('Utilise une adresse email LBS valide.')
+    }
+
+    const redirectTo = `${window.location.origin}/update-password`
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) {
+      throw error
+    }
+  }
+
+  const updatePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      throw error
+    }
+  }
+
   const value = useMemo(
     () => ({
       session,
@@ -130,6 +149,8 @@ export function AuthProvider({ children }) {
       signIn,
       signUp,
       signOut,
+      requestPasswordReset,
+      updatePassword,
       refreshProfile: () => fetchProfile(user?.id),
     }),
     [session, user, profile, loading],
