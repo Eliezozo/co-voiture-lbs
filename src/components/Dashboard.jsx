@@ -15,7 +15,7 @@ export default function Dashboard() {
         <div>
           <p className="text-sm text-slate-500">Bienvenue</p>
           <h2 className="text-xl font-bold text-slate-900">{profile.full_name || profile.email}</h2>
-          <p className="text-xs text-slate-500 mt-1">Rôle: {profile.role === 'driver' ? 'Conducteur' : 'Étudiant / Passager'}</p>
+          <p className="text-xs text-slate-500 mt-1">Rôle: {profile.role === 'driver' ? 'Conducteur' : profile.role === 'admin' ? 'Administrateur' : 'Étudiant / Passager'}</p>
         </div>
         <div className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
           <UserRound size={20} />
@@ -61,6 +61,12 @@ export default function Dashboard() {
           <span className="text-sm">Compte tokens prêt pour réservation et validation.</span>
         </div>
       </section>
+
+      {profile.role === 'driver' && (
+        <section className="bg-brand-50 border border-brand-100 rounded-2xl p-4 text-sm text-brand-900">
+          Conseil: publie ton itinéraire dans l’onglet <strong>Trajets</strong> pour recevoir des réservations.
+        </section>
+      )}
     </div>
   )
 }

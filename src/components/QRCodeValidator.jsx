@@ -80,6 +80,11 @@ export default function QRCodeValidator() {
         <section className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
             <p className="text-sm text-slate-600">Scanne le QR du conducteur pour confirmer ton trajet.</p>
+            {hasPending && (
+              <div className="rounded-xl bg-brand-50 border border-brand-100 p-3 text-xs text-brand-800">
+                {pendingBookings.length} réservation(s) en attente de confirmation.
+              </div>
+            )}
             <button
               onClick={() => setCameraOpen((v) => !v)}
               disabled={!hasPending}
@@ -94,6 +99,17 @@ export default function QRCodeValidator() {
               <p className="text-xs text-amber-600">Aucune réservation en attente à confirmer.</p>
             )}
           </div>
+
+          {hasPending && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
+              <p className="text-sm font-semibold text-slate-900">Réservations en attente</p>
+              {pendingBookings.map((booking) => (
+                <div key={booking.id} className="text-xs text-slate-600 border border-slate-100 rounded-lg p-2">
+                  {booking.trips.departure_city} → {booking.trips.destination} | {booking.trips.price} tokens
+                </div>
+              ))}
+            </div>
+          )}
 
           {cameraOpen && (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black">

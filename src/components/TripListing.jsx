@@ -11,6 +11,7 @@ export default function TripListing() {
   const [zoneFilter, setZoneFilter] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [bookingTripId, setBookingTripId] = useState('')
   const [creatingTrip, setCreatingTrip] = useState(false)
   const [createForm, setCreateForm] = useState({
@@ -80,6 +81,7 @@ export default function TripListing() {
 
     setBookingTripId(tripId)
     setError('')
+    setSuccess('')
 
     const { error: rpcError } = await supabase.rpc('book_trip', {
       p_trip_id: tripId,
@@ -92,6 +94,7 @@ export default function TripListing() {
     }
 
     await Promise.all([fetchTrips(), refreshProfile()])
+    setSuccess('Réservation effectuée avec succès.')
     setBookingTripId('')
   }
 
@@ -109,6 +112,13 @@ export default function TripListing() {
 
     setCreatingTrip(true)
     setError('')
+    setSuccess('')
+
+    if (new Date(createForm.departure_time) <= new Date()) {
+      setError('L’heure de départ doit être dans le futur.')
+      setCreatingTrip(false)
+      return
+    }
 
     const departureIso = new Date(createForm.departure_time).toISOString()
     const { error: insertError } = await supabase.from('trips').insert({
@@ -135,6 +145,7 @@ export default function TripListing() {
       departure_time: '',
     })
     await Promise.all([fetchTrips(), fetchDriverTrips()])
+    setSuccess('Itinéraire publié avec succès.')
     setCreatingTrip(false)
   }
 
@@ -231,6 +242,12 @@ export default function TripListing() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm flex items-center gap-2">
           <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl p-3 text-sm">
+          {success}
         </div>
       )}
 
