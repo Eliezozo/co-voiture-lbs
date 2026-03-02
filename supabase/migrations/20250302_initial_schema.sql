@@ -251,6 +251,11 @@ CREATE POLICY "profiles_update_self"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+CREATE POLICY "profiles_insert_self"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "trips_select_authenticated"
   ON trips FOR SELECT
   TO authenticated

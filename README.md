@@ -59,6 +59,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 
 - fichier: `supabase/migrations/20250302_initial_schema.sql`
 - inclut tables, RLS, triggers, et fonctions RPC (`book_trip`, `confirm_booking_by_qr`)
+- si des comptes existent déjà sans profil dans `public.profiles`, exécuter aussi:
+  - `supabase/migrations/20250302_fix_profile_creation.sql`
 
 4. Lancer en dev:
 

@@ -13,7 +13,10 @@ async function ensureProfileRow(user) {
     role: metadata.role === 'driver' ? 'driver' : 'student',
   }
 
-  await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' })
+  const { error } = await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' })
+  if (error) {
+    throw new Error(`Profil non créé: ${error.message}`)
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -49,6 +52,7 @@ export function AuthProvider({ children }) {
       setUser(currentSession?.user || null)
 
       if (currentSession?.user) {
+        await ensureProfileRow(currentSession.user)
         await fetchProfile(currentSession.user.id)
       }
 
@@ -62,6 +66,7 @@ export function AuthProvider({ children }) {
       setUser(nextSession?.user || null)
 
       if (nextSession?.user) {
+        await ensureProfileRow(nextSession.user)
         await fetchProfile(nextSession.user.id)
       } else {
         setProfile(null)
