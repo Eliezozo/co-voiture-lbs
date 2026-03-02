@@ -1,60 +1,39 @@
-# Notes Clés - LBS Covoiturage
+# Notes Clés - Version alignée au prompt
 
-## 1) Auth et profils
+## Stack
+- React + Vite + Tailwind + Lucide-react
+- Supabase Auth + PostgreSQL
+- Navigation: react-router-dom
+- QR: qrcode.react (génération) + html5-qrcode (scan)
 
-- Seuls les emails LBS sont autorisés.
-- À la création de compte, un trigger SQL crée automatiquement la ligne `profiles`.
-- Le profil stocke:
-  - `role`: `student`, `driver` ou `admin`
-  - `token_balance`: solde des tokens
-- Le mot de passe n'est pas dans `profiles`: il est géré par Supabase Auth (`auth.users`, hashé).
-- Flux UX ajouté: "Mot de passe oublié" + page de mise à jour du mot de passe.
+## Routes
+- `/login`
+- `/`
+- `/publier`
+- `/profil`
 
-## 2) Réservation
+## Rôles
+- `passager`
+- `conducteur`
 
-- La réservation ne se fait pas côté client en plusieurs requêtes séparées.
-- La fonction SQL `book_trip(p_trip_id uuid)` exécute la transaction de bout en bout:
-  - lock du trajet
-  - vérification des places
-  - vérification du solde passager
-  - création booking `pending`
-  - déduction tokens passager
-  - décrément du nombre de places
+## Tables (script unique)
+- `profiles(id, full_name, email, mot_de_passe, role, token_balance)`
+- `trips(id, driver_id, departure_point, destination, zone, price_tokens, departure_time, seats_available, status)`
+- `bookings(id, trip_id, passenger_id, status)`
 
-## 3) Validation QR et commission
+## Logique métier sécurisée
+- Prix automatique par zone via trigger SQL:
+  - zone 1 => 2
+  - zone 2 => 4
+  - zone 3 => 7
+- Réservation via RPC `book_trip_secure`:
+  - vérifie solde passager
+  - crée booking `en_attente`
+  - débite immédiatement le passager
+- Validation QR via RPC `validate_booking_scan`:
+  - vérifie `driver_id`
+  - met booking à `valide`
+  - crédite le conducteur
 
-- Le QR conducteur contient son `profile.id`.
-- Le passager scanne et appelle `confirm_booking_by_qr(p_booking_id, p_scanned_driver_id)`.
-- La fonction SQL:
-  - vérifie la correspondance conducteur/trajet
-  - passe le booking en `completed`
-  - crédite le conducteur à 80% du prix
-  - conserve 20% de commission plateforme
-
-## 4) RLS
-
-- RLS activé sur `profiles`, `trips`, `bookings`.
-- Les policies limitent lecture/écriture par rôle et ownership.
-- Les RPC sont `SECURITY DEFINER` + `GRANT EXECUTE` pour `authenticated`.
-
-## 5) PWA
-
-- Manifest généré par `vite-plugin-pwa`.
-- Service worker généré en build (`generateSW`).
-- Application installable sur mobile.
-
-## 6) Conducteur et admin
-
-- Conducteur:
-  - publie un itinéraire directement dans `TripListing` (insert dans `trips`)
-  - visualise ses itinéraires publiés
-- Admin:
-  - page dédiée `/admin`
-  - accès contrôlé côté frontend (`AdminRoute`) et côté RLS via `public.is_admin()`
-  - voit les derniers profils, trajets et bookings
-
-## 7) Composants demandés
-
-- Dashboard complet: `src/components/Dashboard.jsx`
-- Trip Listing complet: `src/components/TripListing.jsx`
-- Client Supabase: `src/lib/supabase.js`
+## SQL unique
+- `supabase/migrations/20250302_full_schema.sql`

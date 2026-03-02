@@ -1,91 +1,49 @@
 # LBS Covoiturage PWA
 
-Application mobile-first de co-voiturage pour **Lomé Business School (LBS)**.
+PWA mobile-first de covoiturage pour Lomé Business School (LBS).
 
-## Stack
+## Stack imposée
+- React.js (Vite)
+- Tailwind CSS
+- Lucide-react
+- Supabase (Auth + PostgreSQL)
+- React-router-dom
+- QR: `qrcode.react` (génération) + `html5-qrcode` (scan)
 
-- Frontend: React + Tailwind CSS
-- UI Icons: lucide-react
-- Auth + DB: Supabase (PostgreSQL)
-- PWA: Vite + vite-plugin-pwa
+## Routes
+- `/login` : authentification Supabase
+- `/` : dashboard (solde + trajets + filtre zone)
+- `/publier` : publication de trajet (conducteur)
+- `/profil` : historique + QR code / scanner validation
 
-## Fonctionnalités implémentées
+## Fichiers livrables
+- `src/lib/supabaseClient.js`
+- `src/App.jsx`
+- `supabase/migrations/20250302_full_schema.sql`
 
-- Authentification Supabase (inscription/connexion)
-- Réinitialisation et mise à jour du mot de passe via Supabase Auth
-- Restriction email LBS (`@lomebs.com`)
-- Profil utilisateur avec `role` (`student`/`driver`) et `token_balance`
-- Dashboard avec affichage du solde
-- Conducteur: formulaire pour publier son itinéraire (ville départ, destination, zone, places, heure)
-- Listing de trajets avec filtre par zone (1/2/3)
-- Réservation transactionnelle:
-  - vérification solde
-  - création `booking` en `pending`
-  - déduction de tokens
-- Validation QR:
-  - QR unique conducteur basé sur `profile.id`
-  - scan passager via caméra (bouton `Scan to Confirm`)
-  - passage `booking` en `completed`
-  - crédit conducteur à 80% (commission plateforme 20%)
-- PWA installable (manifest + service worker)
-- Page Admin (réservée au rôle `admin`) pour visualiser utilisateurs, trajets et réservations
-
-## Structure principale
-
-- `src/components/Dashboard.jsx`
-- `src/components/TripListing.jsx`
-- `src/components/QRCodeValidator.jsx`
-- `src/components/AuthPage.jsx`
-- `src/context/AuthContext.jsx`
-- `src/lib/supabase.js`
-- `supabase/migrations/20250302_initial_schema.sql`
-
-## Configuration locale
-
-1. Installer les dépendances:
-
+## Configuration
+1. Installer:
 ```bash
 npm install
 ```
-
-2. Créer `.env.local`:
-
+2. `.env.local`:
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
+3. Exécuter SQL unique dans Supabase SQL Editor:
+- `supabase/migrations/20250302_full_schema.sql`
 
-3. Appliquer la migration SQL dans Supabase:
-
-- fichier unique recommandé: `supabase/migrations/20250302_full_schema.sql`
-- ce fichier inclut tout: tables, RLS, triggers, RPC (`book_trip`, `confirm_booking_by_qr`), admin, et backfill profils
-
-4. Lancer en dev:
-
-```bash
-npm run dev
-```
-
-## Scripts
-
-- `npm run dev` : mode développement
-- `npm run lint` : lint ESLint
-- `npm run build` : build production + génération SW PWA
-- `npm run preview` : preview du build
-
-## Schéma DB (résumé)
-
-Note sécurité: le mot de passe n'est pas stocké dans `profiles`. Il est géré et hashé par Supabase dans `auth.users`.
-
-- `profiles(id, email, full_name, role, token_balance)`
-- `trips(id, driver_id, zone, price, seats, status, departure_city, destination, departure_time)`
-- `bookings(id, trip_id, passenger_id, status)`
-
-## Notes métier
-
-- Tarification zones imposée en base:
-  - Zone 1: 2 tokens
-  - Zone 2: 4 tokens
-  - Zone 3: 7 tokens
-- Les opérations sensibles sont gérées côté SQL pour rester atomiques.
-- Le rôle `admin` doit être attribué en base (ex: `update profiles set role='admin' where email='admin@lomebs.com';`).
+## Logique métier implémentée
+- Zone 1 => 2 jetons
+- Zone 2 => 4 jetons
+- Zone 3 => 7 jetons
+- Prix auto en base via trigger
+- Réservation sécurisée via RPC `book_trip_secure`
+  - vérifie solde
+  - crée booking `en_attente`
+  - débite passager immédiatement
+- Validation scan QR via RPC `validate_booking_scan`
+  - vérifie `driver_id`
+  - passe booking à `valide`
+  - crédite conducteur

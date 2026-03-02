@@ -1,43 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabaseClient'
 import { isLbsEmail } from '../lib/constants'
 
 const AuthContext = createContext(null)
 
-function isTransientLockError(error) {
-  const message = `${error?.name || ''} ${error?.message || ''}`.toLowerCase()
-  return message.includes('lock broken by another request') || message.includes('aborterror')
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
-async function ensureProfileRow(user) {
+async function ensureProfile(user) {
   const metadata = user.user_metadata || {}
-  const upsertPayload = {
+  const role = metadata.role === 'conducteur' ? 'conducteur' : 'passager'
+
+  const payload = {
     id: user.id,
-    email: user.email,
     full_name: metadata.full_name || user.email,
-    role: metadata.role === 'driver' ? 'driver' : 'student',
+    email: user.email,
+    role,
+    mot_de_passe: null,
   }
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { error } = await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' })
-
-    if (!error) {
-      return
-    }
-
-    if (isTransientLockError(error) && attempt < 2) {
-      await sleep(150 * (attempt + 1))
-      continue
-    }
-
-    throw new Error(`Profil non créé: ${error.message}`)
-  }
+  await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
 }
 
 export function AuthProvider({ children }) {
@@ -46,18 +25,13 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchProfile = async (userId) => {
+  const loadProfile = async (userId) => {
     if (!userId) {
       setProfile(null)
       return
     }
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
     setProfile(data || null)
   }
 
@@ -73,8 +47,8 @@ export function AuthProvider({ children }) {
       setUser(currentSession?.user || null)
 
       if (currentSession?.user) {
-        await ensureProfileRow(currentSession.user)
-        await fetchProfile(currentSession.user.id)
+        await ensureProfile(currentSession.user)
+        await loadProfile(currentSession.user.id)
       }
 
       setLoading(false)
@@ -87,8 +61,8 @@ export function AuthProvider({ children }) {
       setUser(nextSession?.user || null)
 
       if (nextSession?.user) {
-        await ensureProfileRow(nextSession.user)
-        await fetchProfile(nextSession.user.id)
+        await ensureProfile(nextSession.user)
+        await loadProfile(nextSession.user.id)
       } else {
         setProfile(null)
       }
@@ -102,20 +76,14 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     if (!isLbsEmail(email)) {
-      throw new Error('Utilise une adresse email LBS valide.')
+      throw new Error('Email LBS requis: prenom.nom@lomebs.com')
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      throw error
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
   }
 
-  const signUp = async ({ email, password, fullName, role }) => {
+  const signUp = async ({ fullName, email, password, role }) => {
     if (!isLbsEmail(email)) {
       throw new Error('Inscription réservée aux emails LBS.')
     }
@@ -131,45 +99,15 @@ export function AuthProvider({ children }) {
       },
     })
 
-    if (error) {
-      throw error
-    }
-
+    if (error) throw error
     if (data.user) {
-      try {
-        await ensureProfileRow(data.user)
-      } catch (profileError) {
-        if (!isTransientLockError(profileError)) {
-          throw profileError
-        }
-      }
+      await ensureProfile(data.user)
     }
-
-    return data
   }
 
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
-  }
-
-  const requestPasswordReset = async (email) => {
-    if (!isLbsEmail(email)) {
-      throw new Error('Utilise une adresse email LBS valide.')
-    }
-
-    const redirectTo = `${window.location.origin}/update-password`
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-    if (error) {
-      throw error
-    }
-  }
-
-  const updatePassword = async (newPassword) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    if (error) {
-      throw error
-    }
   }
 
   const value = useMemo(
@@ -181,9 +119,7 @@ export function AuthProvider({ children }) {
       signIn,
       signUp,
       signOut,
-      requestPasswordReset,
-      updatePassword,
-      refreshProfile: () => fetchProfile(user?.id),
+      refreshProfile: () => loadProfile(user?.id),
     }),
     [session, user, profile, loading],
   )
@@ -193,8 +129,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
 }

@@ -1,13 +1,9 @@
-export const ZONE_PRICING = {
+export const ZONE_PRICES = {
   1: 2,
   2: 4,
   3: 7,
 }
 
-export const ALLOWED_EMAIL_DOMAINS = ['lomebs.com']
-
 export function isLbsEmail(email = '') {
-  const lower = email.trim().toLowerCase()
-  const [, domain = ''] = lower.split('@')
-  return ALLOWED_EMAIL_DOMAINS.includes(domain)
+  return email.trim().toLowerCase().endsWith('@lomebs.com')
 }
