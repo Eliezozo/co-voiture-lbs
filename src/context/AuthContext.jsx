@@ -4,6 +4,17 @@ import { isLbsEmail } from '../lib/constants'
 
 const AuthContext = createContext(null)
 
+function isTransientLockError(error) {
+  const message = `${error?.name || ''} ${error?.message || ''}`.toLowerCase()
+  return message.includes('lock broken by another request') || message.includes('aborterror')
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
 async function ensureProfileRow(user) {
   const metadata = user.user_metadata || {}
   const upsertPayload = {
@@ -13,8 +24,18 @@ async function ensureProfileRow(user) {
     role: metadata.role === 'driver' ? 'driver' : 'student',
   }
 
-  const { error } = await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' })
-  if (error) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { error } = await supabase.from('profiles').upsert(upsertPayload, { onConflict: 'id' })
+
+    if (!error) {
+      return
+    }
+
+    if (isTransientLockError(error) && attempt < 2) {
+      await sleep(150 * (attempt + 1))
+      continue
+    }
+
     throw new Error(`Profil non créé: ${error.message}`)
   }
 }
@@ -115,7 +136,13 @@ export function AuthProvider({ children }) {
     }
 
     if (data.user) {
-      await ensureProfileRow(data.user)
+      try {
+        await ensureProfileRow(data.user)
+      } catch (profileError) {
+        if (!isTransientLockError(profileError)) {
+          throw profileError
+        }
+      }
     }
 
     return data
