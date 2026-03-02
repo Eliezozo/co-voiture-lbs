@@ -1,9 +1,10 @@
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { Home, List, QrCode, LogOut } from 'lucide-react'
+import { Home, List, QrCode, LogOut, Shield } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import TripListing from './components/TripListing'
 import QRCodeValidator from './components/QRCodeValidator'
 import AuthPage from './components/AuthPage'
+import AdminPage from './components/AdminPage'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -20,6 +21,20 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function AdminRoute({ children }) {
+  const { profile, loading } = useAuth()
+
+  if (loading) {
+    return <div className="p-10 text-center text-slate-500">Chargement...</div>
+  }
+
+  if (profile?.role !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
+
 function AppShell({ children }) {
   const { profile, signOut } = useAuth()
   const location = useLocation()
@@ -28,6 +43,7 @@ function AppShell({ children }) {
     { to: '/', label: 'Dashboard', icon: Home },
     { to: '/trips', label: 'Trajets', icon: List },
     { to: '/validator', label: 'Validation', icon: QrCode },
+    ...(profile?.role === 'admin' ? [{ to: '/admin', label: 'Admin', icon: Shield }] : []),
   ]
 
   return (
@@ -50,7 +66,7 @@ function AppShell({ children }) {
       <main className="max-w-5xl mx-auto">{children}</main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden z-50">
-        <div className="grid grid-cols-4">
+        <div className={`grid ${profile?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4'}`}>
           {navItems.map((item) => {
             const Icon = item.icon
             const active = location.pathname === item.to
@@ -88,6 +104,14 @@ function AppRoutes() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/trips" element={<TripListing />} />
                 <Route path="/validator" element={<QRCodeValidator />} />
+                <Route
+                  path="/admin"
+                  element={(
+                    <AdminRoute>
+                      <AdminPage />
+                    </AdminRoute>
+                  )}
+                />
               </Routes>
             </AppShell>
           </ProtectedRoute>

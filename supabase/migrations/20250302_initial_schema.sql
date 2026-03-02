@@ -11,7 +11,7 @@ CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
   full_name TEXT NOT NULL DEFAULT '',
-  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'driver')),
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'driver', 'admin')),
   token_balance INTEGER NOT NULL DEFAULT 0 CHECK (token_balance >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -98,6 +98,21 @@ BEGIN
 
   RETURN NEW;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM profiles p
+    WHERE p.id = auth.uid()
+      AND p.role = 'admin'
+  );
 $$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -256,6 +271,7 @@ CREATE POLICY "bookings_select_owner_or_driver"
   ON bookings FOR SELECT
   TO authenticated
   USING (
+    public.is_admin() OR
     auth.uid() = passenger_id OR
     EXISTS (
       SELECT 1

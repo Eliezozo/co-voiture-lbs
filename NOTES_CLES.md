@@ -41,7 +41,17 @@
 - Service worker généré en build (`generateSW`).
 - Application installable sur mobile.
 
-## 6) Composants demandés
+## 6) Conducteur et admin
+
+- Conducteur:
+  - publie un itinéraire directement dans `TripListing` (insert dans `trips`)
+  - visualise ses itinéraires publiés
+- Admin:
+  - page dédiée `/admin`
+  - accès contrôlé côté frontend (`AdminRoute`) et côté RLS via `public.is_admin()`
+  - voit les derniers profils, trajets et bookings
+
+## 7) Composants demandés
 
 - Dashboard complet: `src/components/Dashboard.jsx`
 - Trip Listing complet: `src/components/TripListing.jsx`

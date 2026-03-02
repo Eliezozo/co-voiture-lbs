@@ -15,6 +15,7 @@ Application mobile-first de co-voiturage pour **Lomé Business School (LBS)**.
 - Restriction email LBS (`@lomebs.com`)
 - Profil utilisateur avec `role` (`student`/`driver`) et `token_balance`
 - Dashboard avec affichage du solde
+- Conducteur: formulaire pour publier son itinéraire (ville départ, destination, zone, places, heure)
 - Listing de trajets avec filtre par zone (1/2/3)
 - Réservation transactionnelle:
   - vérification solde
@@ -26,6 +27,7 @@ Application mobile-first de co-voiturage pour **Lomé Business School (LBS)**.
   - passage `booking` en `completed`
   - crédit conducteur à 80% (commission plateforme 20%)
 - PWA installable (manifest + service worker)
+- Page Admin (réservée au rôle `admin`) pour visualiser utilisateurs, trajets et réservations
 
 ## Structure principale
 
@@ -83,3 +85,4 @@ npm run dev
   - Zone 2: 4 tokens
   - Zone 3: 7 tokens
 - Les opérations sensibles sont gérées côté SQL pour rester atomiques.
+- Le rôle `admin` doit être attribué en base (ex: `update profiles set role='admin' where email='admin@lomebs.com';`).
