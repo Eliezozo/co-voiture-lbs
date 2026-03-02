@@ -12,7 +12,7 @@ Application mobile-first de co-voiturage pour **Lomé Business School (LBS)**.
 ## Fonctionnalités implémentées
 
 - Authentification Supabase (inscription/connexion)
-- Restriction email LBS (`@lbs.tg`, `@lbs.edu`, `@lbs.edu.tg`)
+- Restriction email LBS (`@lomebs.com`)
 - Profil utilisateur avec `role` (`student`/`driver`) et `token_balance`
 - Dashboard avec affichage du solde
 - Listing de trajets avec filtre par zone (1/2/3)

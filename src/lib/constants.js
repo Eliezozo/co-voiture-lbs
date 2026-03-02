@@ -4,7 +4,7 @@ export const ZONE_PRICING = {
   3: 7,
 }
 
-export const ALLOWED_EMAIL_DOMAINS = ['lbs.tg', 'lbs.edu', 'lbs.edu.tg']
+export const ALLOWED_EMAIL_DOMAINS = ['lomebs.com']
 
 export function isLbsEmail(email = '') {
   const lower = email.trim().toLowerCase()

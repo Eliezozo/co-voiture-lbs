@@ -82,7 +82,7 @@ export default function AuthPage() {
             required
             value={form.email}
             onChange={handleChange}
-            placeholder="prenom.nom@lbs.tg"
+            placeholder="prenom.nom@lomebs.com"
             className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
 
