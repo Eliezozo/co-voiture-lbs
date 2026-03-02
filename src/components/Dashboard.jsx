@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Wallet, Car, History, QrCode, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
-    const [profile, setProfile] = useState<any>(null);
+    const [profile, setProfile] = useState < any > (null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -95,9 +96,9 @@ export default function Dashboard() {
                             <h3 className="text-lg font-semibold text-slate-800">Mon QR Code</h3>
                             <p className="text-slate-500 text-sm mt-1">Faites scanner ce code aux passagers pour valider le trajet.</p>
                         </div>
-                        <button className="mt-4 w-full bg-slate-50 hover:bg-slate-100 text-brand-600 border border-slate-200 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
+                        <Link to="/validator" className="mt-4 w-full bg-slate-50 hover:bg-slate-100 text-brand-600 border border-slate-200 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
                             Afficher le QR Code
-                        </button>
+                        </Link>
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -108,10 +109,16 @@ export default function Dashboard() {
                             <h3 className="text-lg font-semibold text-slate-800">Réserver un trajet</h3>
                             <p className="text-slate-500 text-sm mt-1">Trouvez un covoiturage vers ou depuis le campus.</p>
                         </div>
-                        <button className="mt-4 w-full bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 shadow-sm">
-                            Voir les trajets
-                            <ArrowRight size={16} />
-                        </button>
+                        <div className="mt-4 flex flex-col gap-2">
+                            <Link to="/trips" className="w-full bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 shadow-sm">
+                                Voir les trajets
+                                <ArrowRight size={16} />
+                            </Link>
+                            <Link to="/validator" className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
+                                <QrCode size={16} />
+                                Valider un trajet
+                            </Link>
+                        </div>
                     </div>
                 )}
             </div>

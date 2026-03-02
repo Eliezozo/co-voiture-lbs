@@ -2,7 +2,8 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Dashboard from './components/Dashboard'
 import TripListing from './components/TripListing'
-import { Home, List } from 'lucide-react'
+import QRCodeValidator from './components/QRCodeValidator'
+import { Home, List, QrCode } from 'lucide-react'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/trips" element={<TripListing />} />
+            <Route path="/validator" element={<QRCodeValidator />} />
           </Routes>
         </main>
 
@@ -26,6 +28,10 @@ function App() {
               <List size={24} />
               <span className="text-[10px] font-medium">Trajets</span>
             </Link>
+            <Link to="/validator" className="flex flex-col items-center gap-1 text-slate-500 hover:text-brand-600 focus:text-brand-600">
+              <QrCode size={24} />
+              <span className="text-[10px] font-medium">Validation</span>
+            </Link>
           </div>
         </nav>
 
@@ -39,6 +45,9 @@ function App() {
               </Link>
               <Link to="/trips" className="font-medium text-slate-600 hover:text-brand-600 transition flex items-center gap-2">
                 <List size={18} /> Trajets
+              </Link>
+              <Link to="/validator" className="font-medium text-slate-600 hover:text-brand-600 transition flex items-center gap-2">
+                <QrCode size={18} /> Validation
               </Link>
             </div>
           </div>
