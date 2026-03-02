@@ -2,14 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertCircle, Clock, MapPin, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { ZONE_PRICING } from '../lib/constants'
 
 export default function TripListing() {
   const { profile, refreshProfile } = useAuth()
   const [trips, setTrips] = useState([])
+  const [driverTrips, setDriverTrips] = useState([])
   const [zoneFilter, setZoneFilter] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [bookingTripId, setBookingTripId] = useState('')
+  const [creatingTrip, setCreatingTrip] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    departure_city: '',
+    destination: '',
+    zone: 1,
+    seats: 1,
+    departure_time: '',
+  })
 
   const fetchTrips = useCallback(async () => {
     setLoading(true)
@@ -42,6 +52,25 @@ export default function TripListing() {
     fetchTrips()
   }, [fetchTrips])
 
+  const fetchDriverTrips = useCallback(async () => {
+    if (profile?.role !== 'driver') {
+      setDriverTrips([])
+      return
+    }
+
+    const { data } = await supabase
+      .from('trips')
+      .select('id,departure_city,destination,zone,price,seats,status,departure_time')
+      .eq('driver_id', profile.id)
+      .order('departure_time', { ascending: true })
+
+    setDriverTrips(data || [])
+  }, [profile])
+
+  useEffect(() => {
+    fetchDriverTrips()
+  }, [fetchDriverTrips])
+
   const statusByZone = useMemo(() => {
     return zoneFilter === 0 ? 'Toutes zones' : `Zone ${zoneFilter}`
   }, [zoneFilter])
@@ -66,8 +95,114 @@ export default function TripListing() {
     setBookingTripId('')
   }
 
+  const handleCreateChange = (e) => {
+    const { name, value } = e.target
+    setCreateForm((prev) => ({
+      ...prev,
+      [name]: name === 'zone' || name === 'seats' ? Number(value) : value,
+    }))
+  }
+
+  const handleCreateTrip = async (e) => {
+    e.preventDefault()
+    if (!profile || profile.role !== 'driver') return
+
+    setCreatingTrip(true)
+    setError('')
+
+    const departureIso = new Date(createForm.departure_time).toISOString()
+    const { error: insertError } = await supabase.from('trips').insert({
+      driver_id: profile.id,
+      departure_city: createForm.departure_city.trim(),
+      destination: createForm.destination.trim(),
+      zone: createForm.zone,
+      seats: createForm.seats,
+      departure_time: departureIso,
+      status: 'scheduled',
+    })
+
+    if (insertError) {
+      setError(insertError.message)
+      setCreatingTrip(false)
+      return
+    }
+
+    setCreateForm({
+      departure_city: '',
+      destination: '',
+      zone: 1,
+      seats: 1,
+      departure_time: '',
+    })
+    await Promise.all([fetchTrips(), fetchDriverTrips()])
+    setCreatingTrip(false)
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-5">
+      {profile?.role === 'driver' && (
+        <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4">
+          <h3 className="text-lg font-bold text-slate-900">Publier mon itinéraire</h3>
+          <form onSubmit={handleCreateTrip} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              name="departure_city"
+              value={createForm.departure_city}
+              onChange={handleCreateChange}
+              placeholder="Ville de départ"
+              required
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              name="destination"
+              value={createForm.destination}
+              onChange={handleCreateChange}
+              placeholder="Destination"
+              required
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+            <select
+              name="zone"
+              value={createForm.zone}
+              onChange={handleCreateChange}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            >
+              <option value={1}>Zone 1 (2 tokens)</option>
+              <option value={2}>Zone 2 (4 tokens)</option>
+              <option value={3}>Zone 3 (7 tokens)</option>
+            </select>
+            <input
+              type="number"
+              name="seats"
+              min={1}
+              value={createForm.seats}
+              onChange={handleCreateChange}
+              required
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              type="datetime-local"
+              name="departure_time"
+              value={createForm.departure_time}
+              onChange={handleCreateChange}
+              required
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2"
+            />
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">
+                Prix appliqué automatiquement: {ZONE_PRICING[createForm.zone]} tokens.
+              </p>
+              <button
+                type="submit"
+                disabled={creatingTrip}
+                className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold disabled:opacity-60"
+              >
+                {creatingTrip ? 'Publication...' : 'Publier le trajet'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
       <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Trajets disponibles</h2>
@@ -145,6 +280,33 @@ export default function TripListing() {
           </article>
         ))}
       </section>
+
+      {profile?.role === 'driver' && (
+        <section className="space-y-3">
+          <h3 className="text-lg font-bold text-slate-900">Mes itinéraires publiés</h3>
+          {driverTrips.length === 0 && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-500">
+              Aucun itinéraire publié pour le moment.
+            </div>
+          )}
+          {driverTrips.map((trip) => (
+            <article key={trip.id} className="bg-white border border-slate-200 rounded-2xl p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {trip.departure_city} → {trip.destination}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">{new Date(trip.departure_time).toLocaleString()}</p>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">{trip.status}</span>
+              </div>
+              <p className="text-sm text-slate-600 mt-2">
+                Zone {trip.zone} | {trip.price} tokens | {trip.seats} place(s) restantes
+              </p>
+            </article>
+          ))}
+        </section>
+      )}
     </div>
   )
 }
