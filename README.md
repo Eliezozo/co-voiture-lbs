@@ -57,10 +57,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 
 3. Appliquer la migration SQL dans Supabase:
 
-- fichier: `supabase/migrations/20250302_initial_schema.sql`
-- inclut tables, RLS, triggers, et fonctions RPC (`book_trip`, `confirm_booking_by_qr`)
-- si des comptes existent déjà sans profil dans `public.profiles`, exécuter aussi:
-  - `supabase/migrations/20250302_fix_profile_creation.sql`
+- fichier unique recommandé: `supabase/migrations/20250302_full_schema.sql`
+- ce fichier inclut tout: tables, RLS, triggers, RPC (`book_trip`, `confirm_booking_by_qr`), admin, et backfill profils
 
 4. Lancer en dev:
 
