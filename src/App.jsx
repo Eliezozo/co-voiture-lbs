@@ -1,63 +1,108 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Home, List, QrCode, LogOut } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import TripListing from './components/TripListing'
 import QRCodeValidator from './components/QRCodeValidator'
-import { Home, List, QrCode } from 'lucide-react'
+import AuthPage from './components/AuthPage'
+import { AuthProvider, useAuth } from './context/AuthContext'
 
-function App() {
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div className="p-10 text-center text-slate-500">Chargement...</div>
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />
+  }
+
+  return children
+}
+
+function AppShell({ children }) {
+  const { profile, signOut } = useAuth()
+  const location = useLocation()
+
+  const navItems = [
+    { to: '/', label: 'Dashboard', icon: Home },
+    { to: '/trips', label: 'Trajets', icon: List },
+    { to: '/validator', label: 'Validation', icon: QrCode },
+  ]
+
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 pb-20 md:pb-0 font-sans text-slate-800">
-        <main className="pt-4 pb-8">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/trips" element={<TripListing />} />
-            <Route path="/validator" element={<QRCodeValidator />} />
-          </Routes>
-        </main>
-
-        {/* Bottom Navigation for Mobile First approach */}
-        <nav className="fixed bottom-0 w-full bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50 md:hidden">
-          <div className="flex justify-around items-center p-3">
-            <Link to="/" className="flex flex-col items-center gap-1 text-slate-500 hover:text-brand-600 focus:text-brand-600">
-              <Home size={24} />
-              <span className="text-[10px] font-medium">Accueil</span>
-            </Link>
-            <Link to="/trips" className="flex flex-col items-center gap-1 text-slate-500 hover:text-brand-600 focus:text-brand-600">
-              <List size={24} />
-              <span className="text-[10px] font-medium">Trajets</span>
-            </Link>
-            <Link to="/validator" className="flex flex-col items-center gap-1 text-slate-500 hover:text-brand-600 focus:text-brand-600">
-              <QrCode size={24} />
-              <span className="text-[10px] font-medium">Validation</span>
-            </Link>
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
+      <header className="hidden md:block bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-brand-700">LBS Covoiturage</h1>
+            <p className="text-xs text-slate-500">{profile?.email}</p>
           </div>
-        </nav>
+          <button
+            onClick={signOut}
+            className="text-sm px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center gap-2"
+          >
+            <LogOut size={16} /> Déconnexion
+          </button>
+        </div>
+      </header>
 
-        {/* Side/Top Navigation for Desktop */}
-        <nav className="hidden md:flex fixed top-0 w-full bg-white border-b border-slate-200 shadow-sm z-50">
-          <div className="max-w-4xl mx-auto w-full px-6 py-4 flex justify-between items-center">
-            <div className="font-bold text-xl text-brand-700 tracking-tight">Covoiturage LBS</div>
-            <div className="flex gap-6">
-              <Link to="/" className="font-medium text-slate-600 hover:text-brand-600 transition flex items-center gap-2">
-                <Home size={18} /> Accueil
-              </Link>
-              <Link to="/trips" className="font-medium text-slate-600 hover:text-brand-600 transition flex items-center gap-2">
-                <List size={18} /> Trajets
-              </Link>
-              <Link to="/validator" className="font-medium text-slate-600 hover:text-brand-600 transition flex items-center gap-2">
-                <QrCode size={18} /> Validation
-              </Link>
-            </div>
-          </div>
-        </nav>
+      <main className="max-w-5xl mx-auto">{children}</main>
 
-        {/* Spacer for desktop nav */}
-        <div className="hidden md:block h-16"></div>
-      </div>
-    </BrowserRouter>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden z-50">
+        <div className="grid grid-cols-4">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const active = location.pathname === item.to
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`py-3 flex flex-col items-center text-xs ${active ? 'text-brand-700' : 'text-slate-500'}`}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+          <button onClick={signOut} className="py-3 flex flex-col items-center text-xs text-slate-500">
+            <LogOut size={18} />
+            <span>Sortir</span>
+          </button>
+        </div>
+      </nav>
+    </div>
   )
 }
 
-export default App
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute>
+            <AppShell>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/trips" element={<TripListing />} />
+                <Route path="/validator" element={<QRCodeValidator />} />
+              </Routes>
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}
