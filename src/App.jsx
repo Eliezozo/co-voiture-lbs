@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Home, LogOut, PlusSquare, UserRound } from 'lucide-react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './components/LoginPage'
@@ -14,7 +14,7 @@ function ProtectedRoute({ children }) {
   return children
 }
 
-function Shell({ children }) {
+function Shell() {
   const { profile, signOut } = useAuth()
   const location = useLocation()
 
@@ -38,7 +38,7 @@ function Shell({ children }) {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto">{children}</main>
+      <main className="max-w-5xl mx-auto"><Outlet /></main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden">
         <div className="grid grid-cols-4">
@@ -67,19 +67,16 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route
-        path="*"
         element={(
           <ProtectedRoute>
-            <Shell>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/publier" element={<PublishPage />} />
-                <Route path="/profil" element={<ProfilePage />} />
-              </Routes>
-            </Shell>
+            <Shell />
           </ProtectedRoute>
         )}
-      />
+      >
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/publier" element={<PublishPage />} />
+        <Route path="/profil" element={<ProfilePage />} />
+      </Route>
     </Routes>
   )
 }
