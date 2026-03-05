@@ -11,10 +11,12 @@
 - `/`
 - `/publier`
 - `/profil`
+- `/admin`
 
 ## Rôles
 - `passager`
 - `conducteur`
+- `admin`
 
 ## Tables (script unique)
 - `profiles(id, full_name, email, mot_de_passe, role, token_balance)`
@@ -37,3 +39,4 @@
 
 ## SQL unique
 - `supabase/migrations/20250302_full_schema.sql`
+- migration incrémentale admin: `supabase/migrations/20260305_enable_admin_panel.sql`

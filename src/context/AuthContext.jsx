@@ -6,17 +6,23 @@ const AuthContext = createContext(null)
 
 async function ensureProfile(user) {
   const metadata = user.user_metadata || {}
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (existing) return
+
   const role = metadata.role === 'conducteur' ? 'conducteur' : 'passager'
 
-  const payload = {
+  await supabase.from('profiles').insert({
     id: user.id,
     full_name: metadata.full_name || user.email,
     email: user.email,
     role,
     mot_de_passe: null,
-  }
-
-  await supabase.from('profiles').upsert(payload, { onConflict: 'id' })
+  })
 }
 
 export function AuthProvider({ children }) {

@@ -15,6 +15,7 @@ PWA mobile-first de covoiturage pour Lomé Business School (LBS).
 - `/` : dashboard (solde + trajets + filtre zone)
 - `/publier` : publication de trajet (conducteur)
 - `/profil` : historique + QR code / scanner validation
+- `/admin` : gestion des utilisateurs (rôle + jetons), réservé au rôle `admin`
 
 ## Fichiers livrables
 - `src/lib/supabaseClient.js`
@@ -33,6 +34,7 @@ VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 3. Exécuter SQL unique dans Supabase SQL Editor:
 - `supabase/migrations/20250302_full_schema.sql`
+- si la base est déjà en place sans rôle admin: `supabase/migrations/20260305_enable_admin_panel.sql`
 
 ## Logique métier implémentée
 - Zone 1 => 2 jetons

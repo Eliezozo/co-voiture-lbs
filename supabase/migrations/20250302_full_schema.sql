@@ -12,7 +12,7 @@ CREATE TABLE profiles (
   full_name TEXT NOT NULL DEFAULT '',
   email TEXT UNIQUE NOT NULL,
   mot_de_passe TEXT,
-  role TEXT NOT NULL DEFAULT 'passager' CHECK (role IN ('passager', 'conducteur')),
+  role TEXT NOT NULL DEFAULT 'passager' CHECK (role IN ('passager', 'conducteur', 'admin')),
   token_balance INTEGER NOT NULL DEFAULT 0 CHECK (token_balance >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -97,6 +97,21 @@ BEGIN
 
   RETURN NEW;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM profiles p
+    WHERE p.id = auth.uid()
+      AND p.role = 'admin'
+  );
 $$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -233,6 +248,7 @@ ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS profiles_select_authenticated ON profiles;
 DROP POLICY IF EXISTS profiles_insert_self ON profiles;
 DROP POLICY IF EXISTS profiles_update_self ON profiles;
+DROP POLICY IF EXISTS profiles_update_admin ON profiles;
 DROP POLICY IF EXISTS trips_select_authenticated ON trips;
 DROP POLICY IF EXISTS trips_insert_driver_only ON trips;
 DROP POLICY IF EXISTS trips_update_driver_only ON trips;
@@ -254,6 +270,12 @@ CREATE POLICY profiles_update_self
   TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
+
+CREATE POLICY profiles_update_admin
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 CREATE POLICY trips_select_authenticated
   ON trips FOR SELECT
