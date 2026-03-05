@@ -11,7 +11,7 @@ const initialForm = {
 }
 
 export default function LoginPage() {
-  const { user, loading, signIn, signUp } = useAuth()
+  const { user, loading, signIn, signUp, authError } = useAuth()
   const [isRegister, setIsRegister] = useState(false)
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState('')
@@ -110,6 +110,7 @@ export default function LoginPage() {
           )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {!error && authError && <p className="text-sm text-red-600">{authError}</p>}
           {message && <p className="text-sm text-green-600">{message}</p>}
 
           <button

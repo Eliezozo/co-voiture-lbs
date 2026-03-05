@@ -30,6 +30,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState('')
 
   const loadProfile = async (userId) => {
     if (!userId) {
@@ -45,32 +46,44 @@ export function AuthProvider({ children }) {
     let mounted = true
 
     const init = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (!mounted) return
+      try {
+        const { data } = await supabase.auth.getSession()
+        if (!mounted) return
 
-      const currentSession = data.session || null
-      setSession(currentSession)
-      setUser(currentSession?.user || null)
+        const currentSession = data.session || null
+        setSession(currentSession)
+        setUser(currentSession?.user || null)
 
-      if (currentSession?.user) {
-        await ensureProfile(currentSession.user)
-        await loadProfile(currentSession.user.id)
+        if (currentSession?.user) {
+          await ensureProfile(currentSession.user)
+          await loadProfile(currentSession.user.id)
+        }
+      } catch (error) {
+        console.error('Auth init error:', error)
+        setAuthError(error?.message || 'Erreur de chargement de session')
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
-
-      setLoading(false)
     }
 
     init()
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      setSession(nextSession)
-      setUser(nextSession?.user || null)
+      try {
+        setSession(nextSession)
+        setUser(nextSession?.user || null)
 
-      if (nextSession?.user) {
-        await ensureProfile(nextSession.user)
-        await loadProfile(nextSession.user.id)
-      } else {
-        setProfile(null)
+        if (nextSession?.user) {
+          await ensureProfile(nextSession.user)
+          await loadProfile(nextSession.user.id)
+        } else {
+          setProfile(null)
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error)
+        setAuthError(error?.message || 'Erreur de synchronisation utilisateur')
       }
     })
 
@@ -122,12 +135,13 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
+      authError,
       signIn,
       signUp,
       signOut,
       refreshProfile: () => loadProfile(user?.id),
     }),
-    [session, user, profile, loading],
+    [session, user, profile, loading, authError],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
